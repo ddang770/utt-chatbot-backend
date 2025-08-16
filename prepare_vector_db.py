@@ -1,4 +1,20 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import subprocess
+
+# --- Patch sysctl Rosetta check for Intel Macs ---
+_orig_run = subprocess.run
+
+def safe_run(*args, **kwargs):
+    if args[0] == ["sysctl", "-n", "sysctl.proc_translated"]:
+        # Fake "not running under Rosetta"
+        class FakeResult:
+            stdout = b"0\n"
+        return FakeResult()
+    return _orig_run(*args, **kwargs)
+
+subprocess.run = safe_run
+# -------------------------------------------------
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import GPT4AllEmbeddings
@@ -17,3 +33,35 @@ def create_db_from_text():
     Hướng mục tiêu trở thành ngân hàng số 1 về hiệu quả tại Việt Nam, ngân hàng bán lẻ hiện đại nhất và là ngân hàng số được yêu thích nhất tại Việt Nam, SHB sẽ tiếp tục nghiên cứu và cho ra mắt nhiều sản phẩm dịch vụ số ưu việt cùngchương trình ưu đãi hấp dẫn, mang đến cho khách hàng lợi ích và trải nghiệm tuyệt vời nhất.
     Để biết thêm thông tin về chương trình, Quý khách vui lòng liên hệ các điểm giao dịch của SHB trên toàn quốc hoặc Hotline *6688"""
 
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=512,
+        chunk_overlap=50,
+        length_function=len,
+    )
+
+    chunks = text_splitter.split_text(raw_text)
+
+    #Embedding
+    embedding_model = GPT4AllEmbeddings(model_file="models/all-MiniLM-L6-v2-f16.gguf")
+
+    # Dua vao Faiss Vector DB
+    db = FAISS.from_texts(texts=chunks, embedding=embedding_model)
+    db.save_local(vector_db_path)
+    return db
+
+def create_db_from_files():
+    # Khai bao loader de quet toan bo thu muc data
+    loader = DirectoryLoader(pdf_data_path, glob="*.pdf", loader_cls=PyPDFLoader)
+    documents = loader.load()
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+    chunks = text_splitter.split_documents(documents)
+
+    # Embedding
+    embedding_model = GPT4AllEmbeddings(model_file="models/all-MiniLM-L6-v2-f16.gguf")
+    db = FAISS.from_documents(chunks, embedding_model)
+    db.save_local(vector_db_path)
+    return db
+
+create_db_from_files()
