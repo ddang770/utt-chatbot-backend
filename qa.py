@@ -72,6 +72,6 @@ prompt = creat_prompt(template)
 llm_chain  =create_qa_chain(prompt, llm, db)
 
 # Chay cai chain
-question = "Khái niệm học phần là gì?"
+question = "SHB miễn phí mở tài khoản số đẹp trị giá bao nhiêu?"
 response = llm_chain.invoke({"query": question})
 print(response)

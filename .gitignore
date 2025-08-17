@@ -3,3 +3,7 @@ models
 *.xml
 *.iml
 data
+vectorstores/*
+vectorstores
+vectorstores/db_faiss/*.faiss
+vectorstores/db_faiss/*.pkl
