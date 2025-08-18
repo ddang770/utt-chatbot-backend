@@ -8,3 +8,5 @@ sentence-transformers
 gpt4all
 faiss-cpu
 openai
+fastapi
+uvicorn

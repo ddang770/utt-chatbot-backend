@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Cau hinh
-vector_db_path = "vectorstores/db_faiss"
+vector_db_path = "../vectorstores/db_faiss"
 
 # Load LLM
 def load_llm():
@@ -51,7 +51,7 @@ def create_qa_chain(prompt, llm, db):
     llm_chain = RetrievalQA.from_chain_type(
         llm = llm,
         chain_type= "stuff",
-        retriever = db.as_retriever(search_type="similarity", search_kwargs = {"k":3}),
+        retriever = db.as_retriever(search_type="similarity", search_kwargs = {"k":4}),
         return_source_documents = False,
         chain_type_kwargs= {'prompt': prompt}
 
@@ -63,7 +63,7 @@ def create_qa_chain(prompt, llm, db):
 def read_vectors_db():
     # Embeding
     print("Reading vectors from db...")
-    embedding_model = GPT4AllEmbeddings(model_file="models/all-MiniLM-L6-v2-f16.gguf")
+    embedding_model = GPT4AllEmbeddings(model_file="../models/all-MiniLM-L6-v2-f16.gguf")
     #embedding_model = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", google_api_key=getenv("GOOGLE_API_KEY"))
     db = FAISS.load_local(vector_db_path, embedding_model, allow_dangerous_deserialization=True)
     print("Read vectors from db done")
@@ -76,11 +76,13 @@ llm = load_llm()
 
 #Tao Prompt
 template = """
-Hãy sử dụng những thông tin ngữ cảnh sau để trả lời câu hỏi. Nếu thông tin không có trong ngữ cảnh, hãy nói "Xin lỗi, tôi không thể trả lời câu hỏi của bạn, hãy thử hỏi theo cách khác", đừng cố gắng bịa ra câu trả lời. Chỉ sử dụng những thông tin ngữ cảnh sau, đừng sử dụng kiến thức của riêng bạn.
+Bạn là trợ lý tư vấn tuyển sinh. Nhiệm vụ: trả lời CHỈ dựa trên NGỮ CẢNH được cung cấp.
+
+Hãy sử dụng những thông tin ngữ cảnh sau để trả lời câu hỏi. Nếu thông tin không có trong ngữ cảnh, hãy nói "Xin lỗi, tôi không thể trả lời câu hỏi của bạn, hãy thử hỏi theo cách khác", đừng cố gắng bịa ra câu trả lời. Chỉ sử dụng những thông tin ngữ cảnh sau, đừng sử dụng kiến thức của riêng bạn. Hãy cố gắng bao quát đầy đủ thông tin trong ngữ cảnh để trả lời sao cho đầy đủ nhất có thể tránh tóm tắt ngắn gọn dẫn đến thiếu thông tin.
 
 {context}
 
-Câu hỏi: {question}
+CÂU HỎI: {question}
 """
 # template = """<|im_start|>system\nSử dụng thông tin sau đây để trả lời câu hỏi. Nếu bạn không biết câu trả lời, hãy nói không biết, đừng cố tạo ra câu trả lời\n
 # {context}<|im_end|>\n<|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant"""
@@ -98,6 +100,6 @@ prompt = creat_prompt(template)
 llm_chain  = create_qa_chain(prompt, llm, db)
 
 # Chay cai chain
-question = "Tôi muốn biết về chương trình liên kết quốc tế của trường!"
+question = "4 tháng cuối năm 2023, SHB đã làm gì?"
 response = llm_chain.invoke({"query": question})
 print(response)

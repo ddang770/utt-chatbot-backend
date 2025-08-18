@@ -7,3 +7,4 @@ vectorstores/*
 vectorstores
 vectorstores/db_faiss/*.faiss
 vectorstores/db_faiss/*.pkl
+.env

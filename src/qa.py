@@ -21,8 +21,8 @@ from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Cau hinh
-model_file = "models/vinallama-7b-chat_q5_0.gguf"
-vector_db_path = "vectorstores/db_faiss"
+model_file = "../models/vinallama-7b-chat_q5_0.gguf"
+vector_db_path = "../vectorstores/db_faiss"
 
 # Load LLM
 def load_llm(model_file):
@@ -55,7 +55,7 @@ def create_qa_chain(prompt, llm, db):
 # Read tu VectorDB
 def read_vectors_db():
     # Embeding
-    embedding_model = GPT4AllEmbeddings(model_file="models/all-MiniLM-L6-v2-f16.gguf")
+    embedding_model = GPT4AllEmbeddings(model_file="../models/all-MiniLM-L6-v2-f16.gguf")
     db = FAISS.load_local(vector_db_path, embedding_model, allow_dangerous_deserialization=True)
     return db
 

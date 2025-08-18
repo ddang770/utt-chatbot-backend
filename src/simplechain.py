@@ -1,21 +1,17 @@
-#from langchain_community.llms import CTransformers
-from langchain_openai import ChatOpenAI
+from langchain_community.llms import CTransformers
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from os import getenv
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Cau hinh
+model_file = "../models/vinallama-7b-chat_q5_0.gguf"
 
 
 # Load LLM
-def load_llm():
-    llm = ChatOpenAI(
-        api_key=getenv("OPENROUTER_API_KEY"),
-        base_url=getenv("OPENROUTER_BASE_URL"),
-        model="openai/gpt-oss-20b:free",
+def load_llm(model_file):
+    llm = CTransformers(
+        model=model_file,
+        model_type="llama",
+        max_new_tokens=1024,
         temperature=0.01
     )
     return llm
@@ -42,9 +38,9 @@ Bạn là một trợ lí AI hữu ích. Hãy trả lời người dùng một c
 <|im_start|>assistant"""
 
 prompt = creat_prompt(template)
-llm = load_llm()
+llm = load_llm(model_file)
 llm_chain = create_simple_chain(prompt, llm)
 
 question = "Một cộng một bằng mấy?"
 response = llm_chain.invoke({"question":question})
-print(response.content)
+print(response)
