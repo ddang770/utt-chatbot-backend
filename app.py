@@ -1,6 +1,7 @@
 from config.cors import app
 from pydantic import BaseModel
 from services.chat_service import test_api
+#from src.qaGptOss import process_query
 from src.simpleChainGptOss import process_query
 from fastapi import HTTPException
 
@@ -10,7 +11,7 @@ class UserQuery(BaseModel):
     query: str
 
 # Route test
-@app.get("/")
+@app.get("/test_api")
 def root():
     return {"Hello": "World"}
 

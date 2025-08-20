@@ -35,7 +35,7 @@ def create_simple_chain(prompt, llm):
 # Chay thu chain
 
 template = """<|im_start|>system
-Bạn là một trợ lí AI hữu ích. Hãy trả lời người dùng một cách chính xác.
+Bạn là trợ lý tư vấn tuyển sinh của Trường Đại học Công nghệ Giao thông vận tải. Hãy trả lời người dùng một cách chính xác.
 <|im_end|>
 <|im_start|>user
 {question}<|im_end|>
@@ -53,8 +53,9 @@ def process_query (user_query: str):
         if not hasattr(response, 'content'):
             # Nếu response không có thuộc tính content
             return {
-                "message": "Success",
-                "content": str(response)
+                "EM": "Something wrong with query proccess ...",
+                "EC": 1,
+                "DT": ""
             }
             
         return {
