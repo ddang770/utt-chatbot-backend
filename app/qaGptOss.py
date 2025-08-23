@@ -1,23 +1,6 @@
-import subprocess
-
-# --- Patch sysctl Rosetta check for Intel Macs ---
-_orig_run = subprocess.run
-
-def safe_run(*args, **kwargs):
-    if args[0] == ["sysctl", "-n", "sysctl.proc_translated"]:
-        # Fake "not running under Rosetta"
-        class FakeResult:
-            stdout = b"0\n"
-        return FakeResult()
-    return _orig_run(*args, **kwargs)
-
-subprocess.run = safe_run
-# -------------------------------------------------
-
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-#from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from os import getenv

@@ -13,7 +13,7 @@ def format_size(size_bytes):
         return f"{size_bytes/1024**3:.1f} GB"
 
 def get_document_file_metadata():
-    folder_path = "data"
+    folder_path = "app/data"
     files_info = []
     try:
         for f in os.listdir(folder_path):
@@ -42,6 +42,6 @@ def get_document_file_metadata():
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         return  {
             "EC": 1,
-            "EM": "Something wrong in service...",
+            "EM": "Something wrong in chat service...",
             "DT": []
         }
