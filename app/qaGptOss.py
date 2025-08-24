@@ -5,6 +5,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from os import getenv
 from dotenv import load_dotenv
+from app.vectorstore import VectorStore
 
 load_dotenv()
 
@@ -44,13 +45,8 @@ def create_qa_chain(prompt, llm, db):
 
 # Read tu VectorDB
 def read_vectors_db():
-    # Embeding
-    print("Reading vectors from db...")
-    embedding_model = OpenAIEmbeddings(
-        model="text-embedding-3-small",
-        api_key=getenv("OPENAI_KEY")
-    )
-    db = FAISS.load_local(vector_db_path, embedding_model, allow_dangerous_deserialization=True)
+    # Lấy instance đã load sẵn hoặc tạo mới
+    db = VectorStore.get_instance()
     print("Read vectors from db done")
     return db
 

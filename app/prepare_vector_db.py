@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Khai bao bien
-pdf_data_path = "../data"
-vector_db_path = "../vectorstores/db_faiss"
+pdf_data_path = "data"
+vector_db_path = "vectorstores/db_faiss"
 
 # Ham 1. Tao ra vector DB tu 1 doan text
 def create_db_from_text():
