@@ -10,7 +10,7 @@ import os
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from langchain_unstructured import UnstructuredLoader
-from langchain_openai import OpenAIEmbeddings
+from sqlalchemy.exc import IntegrityError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.vectorstore import VectorStore
 import numpy as np
@@ -45,6 +45,7 @@ def stats_service():
         )
 
         num_messages = db.query(models.Message).count()
+        num_documents = db.query(models.Document).count()
 
         return {
             "EM": "Get stats data success!",
@@ -52,7 +53,8 @@ def stats_service():
             "DT": {
                 "total_users": total_users,
                 "todays_users": todays_users,
-                "num_messages": num_messages
+                "num_messages": num_messages,
+                "num_documents": num_documents
             }
         }
     except Exception as e:
@@ -87,17 +89,28 @@ async def add_documents(files: list[UploadFile], db: Session):
             with open(file_path, "wb") as f:
                 f.write(await file.read())
 
-            # Save metadata vào Postgres
-            doc = models.Document(
-                name=file.filename,
-                size=f"{format_size(os.path.getsize(file_path))}",
-                upload_date=datetime.now(timezone.utc),
-                status="processed",
-                type=file.filename.split(".")[-1].upper(),
-            )
-            db.add(doc)
-            db.commit()
-            db.refresh(doc)
+            try:
+                # Try saving metadata vào Postgres
+                doc = models.Document(
+                    name=file.filename,
+                    size=f"{format_size(os.path.getsize(file_path))}",
+                    upload_date=datetime.now(timezone.utc),
+                    status="processed",
+                    type=file.filename.split(".")[-1].upper(),
+                )
+                db.add(doc)
+                db.commit()
+                db.refresh(doc)
+            except IntegrityError:
+                db.rollback()  # rollback để tiếp tục xử lý
+                # Nếu đã tồn tại file thì update lại metadata
+                existing_doc = db.query(models.Document).filter_by(name=file.filename).first()
+                if existing_doc:
+                    return {
+                        "EC": 2,
+                        "EM": f"Đã tồn tại file {file.filename}...",
+                        "DT": []
+                    }
 
             # Chunk file
             loader = UnstructuredLoader(file_path, mode="elements")

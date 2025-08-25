@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, func
 from app.config.database import Base
+from datetime import datetime, timezone
 
 class Message(Base):
     __tablename__ = "messages"
@@ -16,7 +17,7 @@ class Document(Base):
 
     # metadata fields
     name = Column(String, nullable=False)         # "name_file.md"
-    size = Column(String, nullable=False)         # "166.0 KB"
-    upload_date = Column(DateTime, server_default=func.now())
+    size = Column(String, unique=True, nullable=False)         # "166.0 KB"
+    upload_date = Column(DateTime, default=datetime.now(timezone.utc))
     status = Column(String, default="pending")    # "processed" | "pending" | "failed"
     type = Column(String, nullable=False)         # "MD" | "PDF" | ...
