@@ -77,6 +77,33 @@ def format_size(size_bytes):
         return f"{size_bytes/1024**2:.1f} MB"
     else:
         return f"{size_bytes/1024**3:.1f} GB"
+    
+def get_all_documents(db: Session):
+    try:
+        docs = db.query(models.Document).all()
+        return  {
+            "EC": 0,
+            "EM": "Get document metadata successful!",
+            "DT": [
+                {
+                    "id": d.id,
+                    "name": d.name,
+                    "size": d.size,
+                    "uploadDate": d.upload_date.strftime("%Y-%m-%d") if d.upload_date else None,
+                    "status": d.status,
+                    "type": d.type
+                }
+                for d in docs
+            ]
+        }
+    except Exception as e:
+        print(f"Error: {str(e)}")  # In ra lỗi để debug
+        return  {
+            "EC": 1,
+            "EM": "Something wrong in chat service...",
+            "DT": []
+        }
+
 
 async def add_documents(files: list[UploadFile], db: Session):
     try:
@@ -131,13 +158,22 @@ async def add_documents(files: list[UploadFile], db: Session):
                 })
                 continue
 
+            # Generate stable FAISS IDs
+            faiss_ids = [str(uuid.uuid4()) for _ in texts]
+
             # Add vào FAISS (global instance)
             faiss_index = VectorStore.get_instance()
             faiss_index.add_texts(
                 texts,
-                metadatas=[{"doc_id": doc.id, "source": file.filename} for _ in texts]
+                metadatas=[{"doc_id": doc.id, "source": file.filename} for _ in texts],
+                ids = faiss_ids
             )
             VectorStore.save()
+
+            # Save FAISS IDs to Postgres
+            doc.vector_ids = faiss_ids
+            db.add(doc)
+            db.commit()
 
             results.append({
                 "name": file.filename,
@@ -159,15 +195,36 @@ async def add_documents(files: list[UploadFile], db: Session):
             "DT": []
         }
 
-def delete_document(doc_id: int, db: Session):
-    try:
-        faiss_index = VectorStore.get_instance()
-        faiss_index.index.remove_ids(np.array([doc_id]))
-        VectorStore.save()
 
-        db.query(models.Document).filter(models.Document.id == doc_id).delete()
+async def delete_document(request: Request, db: Session):
+    try:
+        # get the doc_id from request and init vectordb instance
+        faiss_index = VectorStore.get_instance()
+        data = await request.json()
+        doc_id = data.get("id")
+
+        # 1.find document in DB
+        document = db.query(models.Document).filter(models.Document.id == doc_id).first()
+        if not document:
+            return {"EC": 1, "EM": f"Document {doc_id} not found", "DT": []}
+
+        # 2.remove vectors by FAISS IDs
+        if document.vector_ids:
+            faiss_index.delete(ids=document.vector_ids)
+            VectorStore.save()
+
+        # 3.delete physical file in app/data/ folder
+        base_dir = os.path.dirname(os.path.dirname(__file__))   # go up from services/ -> app/
+        data_dir = os.path.join(base_dir, "data")
+        file_path = os.path.join(data_dir, document.name)
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # 4.delete from postgresql
+        db.delete(document)
         db.commit()
-        # return {"message": f"Document {doc_id} deleted"}
+
         return {
             "EM": f"Document {doc_id} deleted",
             "EC": 0,

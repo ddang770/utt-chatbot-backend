@@ -1,47 +1,46 @@
-import os
-import datetime
+from app.qaGptOss import process_query
+from pydantic import BaseModel
+from fastapi import Request, Response
+import uuid
 
-def format_size(size_bytes):
-    """Chuyển byte → KB/MB/GB"""
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024**2:
-        return f"{size_bytes/1024:.1f} KB"
-    elif size_bytes < 1024**3:
-        return f"{size_bytes/1024**2:.1f} MB"
-    else:
-        return f"{size_bytes/1024**3:.1f} GB"
+# Định nghĩa schema cho request body
+class UserQuery(BaseModel):
+    id: str
+    query: str
 
-def get_document_file_metadata():
-    folder_path = "app/data"
-    files_info = []
+def chat(user_query: UserQuery):
     try:
-        for f in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, f)
-            if os.path.isfile(file_path):
-                size = os.path.getsize(file_path)
-                upload_date = datetime.datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d")
-                file_type = os.path.splitext(f)[1].replace(".", "").upper()  # ví dụ ".pdf" → "PDF"
-                
-                info = {
-                    "name": f,
-                    "size": format_size(size),
-                    "uploadDate": upload_date,
-                    "status": "processed",
-                    "type": file_type
-                }
-                files_info.append(info)
-
-        #print(files_info)
-        return  {
+        response = process_query(user_query.query)
+        return {
+            "EM": "Success",
             "EC": 0,
-            "EM": "Get document metadata success",
-            "DT": files_info
+            "DT": response['result']
         }
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         return  {
             "EC": 1,
             "EM": "Something wrong in chat service...",
-            "DT": []
+            "DT": ""
+        }
+    
+# assign cookie to user
+def assign_cookie(response: Response, request: Request):
+    try:
+        #gán cookie user_id nếu chưa có
+        user_id = request.cookies.get("user_id")
+        if not user_id:
+            user_id = str(uuid.uuid4()) #init user id
+            response.set_cookie(key="user_id", value=user_id, max_age=60*60*24*30, HttpOnly=False)
+        return {
+            "EM": "Success assign cookie!",
+            "EC": 0,
+            "DT": ""
+        }
+    except Exception as e:
+        print(f"Error: {str(e)}")  # In ra lỗi để debug
+        return  {
+            "EC": 1,
+            "EM": "Something wrong in chat service...",
+            "DT": ""
         }

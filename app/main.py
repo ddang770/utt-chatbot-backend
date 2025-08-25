@@ -1,8 +1,7 @@
 from app.config.cors import app
 from pydantic import BaseModel
-from app.services.chat_service import get_document_file_metadata
 import app.services.admin_service as admin_service
-from app.qaGptOss import process_query
+import app.services.chat_service as chat_service
 #from app.simpleChainGptOss import process_query
 from fastapi import HTTPException, Request, Response, Depends, UploadFile, File
 import uuid
@@ -18,44 +17,41 @@ def load_faiss_index():
     VectorStore.get_instance()
     print("✅ FAISS index loaded and ready")
 
-# Định nghĩa schema cho request body
-class UserQuery(BaseModel):
-    id: str
-    query: str
-
 # Route test
 @app.get("/")
 def root():
     return {"Hello": "World"}
 
-# Route POST nhận JSON
+# Định nghĩa schema cho request body
+class UserQuery(BaseModel):
+    id: str
+    query: str
+
 @app.post("/chat")
 def chat(user_query: UserQuery):
     try:
-        result = process_query(user_query.query)
-        return result
+        return chat_service.chat(user_query)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
     
 # get all file's name in data folder
-@app.get("/document_file")
-def get_document_file():
+@app.get("/admin/document/read")
+def get_document_file(db: Session = Depends(get_db)):
     try:
-        return get_document_file_metadata()
+        return admin_service.get_all_documents(db)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
     
 # Assign cookies to user
 @app.get("/ck")
-def home(response: Response, request: Request):
-    #gán cookie user_id nếu chưa có
-    user_id = request.cookies.get("user_id")
-    if not user_id:
-        user_id = str(uuid.uuid4()) #init user id
-        response.set_cookie(key="user_id", value=user_id, max_age=60*60*24*30, HttpOnly=False)
-    return {"msg": "Welcome to Chatbot!"}
+def assign_cookie(response: Response, request: Request):
+    try:
+        return chat_service.assign_cookie(response, request)
+    except Exception as e:
+        print(f"Error: {str(e)}")  # In ra lỗi để debug
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/admin/stats")
@@ -84,10 +80,10 @@ async def add_documents(files: List[UploadFile] = File(...), db: Session = Depen
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/admin/document/{doc_id}")
-async def delete_document(doc_id: int, db: Session = Depends(get_db)):
+@app.post("/admin/document/delete")
+async def delete_document(request: Request, db: Session = Depends(get_db)):
     try:
-        return await admin_service.delete_document(doc_id, db)
+        return await admin_service.delete_document(request, db)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, func
 from app.config.database import Base
 from datetime import datetime, timezone
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Message(Base):
     __tablename__ = "messages"
@@ -21,3 +22,4 @@ class Document(Base):
     upload_date = Column(DateTime, default=datetime.now(timezone.utc))
     status = Column(String, default="pending")    # "processed" | "pending" | "failed"
     type = Column(String, nullable=False)         # "MD" | "PDF" | ...
+    vector_ids = Column(JSONB, nullable=True) 

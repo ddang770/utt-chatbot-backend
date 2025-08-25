@@ -87,7 +87,7 @@ def process_query (user_query: str):
 
         # Chay chain
         response = llm_chain.invoke({"query": user_query})
-        print(response)
+        #print(response)
         # response sẽ trả về 1 dict gồm 2 key là: query và result
         if 'result' not in response:
             return {
@@ -96,11 +96,7 @@ def process_query (user_query: str):
                 "DT": ""
             }
             
-        return {
-            "EM": "Success",
-            "EC": 0,
-            "DT": response['result']
-        }
+        return response
 
     except Exception as e:
         print(f"Process query error: {str(e)}")  # In ra lỗi để debug
