@@ -1,11 +1,9 @@
-ctransformers
-transformers
 langchain
 langchain-community
+langchain-unstructured
+langchain-openai
 torch
 pypdf
-sentence-transformers
-gpt4all
 faiss-cpu
 openai
 fastapi
@@ -13,4 +11,4 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 alembic
-langchain-unstructured
+python-multipart

@@ -95,8 +95,17 @@ def process_query (user_query: str):
                 "EC": 1,
                 "DT": ""
             }
+        
+        # xử lý strip vì openrouter trả về cả reasoning trong result (lỏ vcl)
+        result = response["result"].strip()
+
+        # loại bỏ nếu có prefix "analysis" hay "assistantfinal"
+        if "assistantfinal" in result:
+            result = result.split("assistantfinal")[-1].strip()
+        if "analysis" in result:
+            result = result.split("analysis")[-1].strip()
             
-        return response
+        return result
 
     except Exception as e:
         print(f"Process query error: {str(e)}")  # In ra lỗi để debug

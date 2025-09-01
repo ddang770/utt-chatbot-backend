@@ -10,11 +10,11 @@ class UserQuery(BaseModel):
 
 def chat(user_query: UserQuery):
     try:
-        response = process_query(user_query.query)
+        result = process_query(user_query.query)
         return {
             "EM": "Success",
             "EC": 0,
-            "DT": response['result']
+            "DT": result
         }
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
