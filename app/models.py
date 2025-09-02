@@ -23,3 +23,10 @@ class Document(Base):
     status = Column(String, default="pending")    # "processed" | "pending" | "failed"
     type = Column(String, nullable=False)         # "MD" | "PDF" | ...
     vector_ids = Column(JSONB, nullable=True) 
+
+class Admin(Base):
+    __tablename__ = "admins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)

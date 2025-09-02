@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.vectorstore import VectorStore
 from typing import List
+from app.auth import routers
+import app.routes as admin_router
 
 # Load FAISS 1 lần khi app start
 #@app.on_event("startup")
@@ -21,6 +23,11 @@ def load_faiss_index():
 @app.get("/")
 def root():
     return {"Hello": "World"}
+
+#import auth_router
+app.include_router(routers.router)
+#import /admin router
+app.include_router(admin_router.admin_router)
 
 # Định nghĩa schema cho request body
 class UserQuery(BaseModel):
@@ -35,55 +42,12 @@ def chat(user_query: UserQuery):
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
     
-# get all file's name in data folder
-@app.get("/admin/document/read")
-def get_document_file(db: Session = Depends(get_db)):
-    try:
-        return admin_service.get_all_documents(db)
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
     
 # Assign cookies to user
 @app.get("/ck")
 def assign_cookie(response: Response, request: Request):
     try:
         return chat_service.assign_cookie(response, request)
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/admin/stats")
-def get_stats():
-    try:
-        return admin_service.stats_service()
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
-    
-
-@app.post("/admin/message")
-async def save_message(request: Request, db: Session = Depends(get_db)):
-    try:
-        return await admin_service.message_service(request, db)
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
-    
-
-@app.post("/admin/document/add")
-async def add_documents(files: List[UploadFile] = File(...), db: Session = Depends(get_db)):
-    try:
-        return await admin_service.add_documents(files, db)
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/admin/document/delete")
-async def delete_document(request: Request, db: Session = Depends(get_db)):
-    try:
-        return await admin_service.delete_document(request, db)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
