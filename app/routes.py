@@ -4,6 +4,8 @@ from app.auth.util import get_current_admin
 import app.services.admin_service as admin_service
 from app.config.database import get_db
 from typing import List
+from app.schemas.admin import ChangePasswordSchema
+import app.auth.util as auth_util
 
 # Create admin dependency
 async def verify_admin(current_admin = Security(get_current_admin)):
@@ -57,3 +59,16 @@ async def delete_document(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
+    
+@admin_router.post("/change-password")
+async def change_password(
+    password_data: ChangePasswordSchema,
+    current_admin = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    return await auth_util.change_admin_password(
+        current_admin,
+        password_data.current_password,
+        password_data.new_password,
+        db
+    )

@@ -55,3 +55,26 @@ async def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = D
     if admin is None:
         raise credentials_exception
     return admin
+
+async def change_admin_password(
+    current_admin: Admin, 
+    current_password: str, 
+    new_password: str,
+    db: Session
+):
+    if not verify_password(current_password, current_admin.password):
+        #raise HTTPException(status_code=400, detail="Current password is incorrect")
+        return {
+            "EC": 1,
+            "EM": "Current password is incorrect",
+            "DT": ""
+        }
+    
+    hashed_password = get_password_hash(new_password)
+    current_admin.password = hashed_password
+    db.commit()
+    return {
+        "EC": 0,
+        "EM": "Password updated successfully",
+        "DT": ""
+    }
