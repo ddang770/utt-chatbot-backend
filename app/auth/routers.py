@@ -9,11 +9,16 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=AdminResponse)
 def register(admin: AdminCreate, db: Session = Depends(get_db)):
-    return create_admin(db, admin.username, admin.password)
+    return create_admin(
+        db=db,
+        username=admin.username,
+        email=admin.email,
+        password=admin.password
+    )
 
 @router.post("/login", response_model=Token)
 def login(admin: AdminLogin, db: Session = Depends(get_db)):
-    return authenticate_admin(db, admin.username, admin.password)
+    return authenticate_admin(db, admin.email, admin.password)
 
 @router.get("/me", response_model=AdminResponse)
 def read_users_me(current_admin = Depends(get_current_admin)):

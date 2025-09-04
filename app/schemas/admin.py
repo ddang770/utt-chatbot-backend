@@ -1,11 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 class AdminCreate(BaseModel):
     username: str
+    email: EmailStr
     password: str
 
 class AdminLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 class Token(BaseModel):
@@ -14,9 +16,13 @@ class Token(BaseModel):
 
 class AdminResponse(BaseModel):
     username: str
-    
+    email: str
+    last_login: datetime | None = None
+    formatted_last_login: str | None = None
+
     class Config:
         from_attributes = True
+        from_attributes_defaults = True
 
 class ChangePasswordSchema(BaseModel):
     current_password: str

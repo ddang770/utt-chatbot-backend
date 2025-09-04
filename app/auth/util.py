@@ -45,13 +45,13 @@ async def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = D
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
     
-    admin = db.query(Admin).filter(Admin.username == username).first()
+    admin = db.query(Admin).filter(Admin.email == email).first()
     if admin is None:
         raise credentials_exception
     return admin
