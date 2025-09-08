@@ -1,16 +1,30 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 from app.config.database import Base
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
+import uuid
 
 class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
     message = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="messages")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    first_seen = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), onupdate=func.now(), default=func.now())
+
+    # One-to-many: a user has many messages
+    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"

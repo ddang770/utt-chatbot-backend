@@ -45,9 +45,10 @@ def chat(user_query: UserQuery):
     
 # Assign cookies to user
 @app.get("/ck")
-def assign_cookie(response: Response, request: Request):
+def assign_cookie(response: Response, request: Request, db: Session = Depends(get_db)):
     try:
-        return chat_service.assign_cookie(response, request)
+        return chat_service.assign_cookie(response, request, db)
+
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))

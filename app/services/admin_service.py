@@ -20,7 +20,7 @@ load_dotenv()
 # Get user message and save to database for admin monitor
 async def message_service(request: Request, db: Session):
     #Nhận message từ user, lưu DB
-    user_id = request.cookies.get("user_id") or str(uuid.uuid4())
+    user_id = request.cookies.get("user_id")
     data = await request.json()
     msg = data.get("message", "")
 
@@ -35,7 +35,7 @@ async def message_service(request: Request, db: Session):
 def stats_service():
     db = SessionLocal()
     try:
-        total_users = db.query(models.Message.user_id).distinct().count()
+        total_users = db.query(models.User).distinct().count()
 
         todays_users = (
             db.query(models.Message.user_id)
