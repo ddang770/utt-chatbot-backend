@@ -12,4 +12,7 @@ backup_data/*
 vectorstores/*
 vectorstores
 
-__pycache__
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
