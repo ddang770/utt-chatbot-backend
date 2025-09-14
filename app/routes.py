@@ -72,3 +72,13 @@ async def change_password(
         password_data.new_password,
         db
     )
+
+
+@admin_router.get("/documents/{doc_id}/generate_link")
+def generate_doc_link(doc_id: int, current_admin = Depends(get_current_admin)):
+    signed_url = admin_service.create_signed_url(doc_id, expires_in=180)
+    return {
+        "EC": 0,
+        "EM": "Create signed url success!",
+        "DT": {"url": signed_url}
+    }

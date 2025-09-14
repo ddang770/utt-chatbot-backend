@@ -1,6 +1,6 @@
 # from app.config.database import get_db
 from typing import List
-from fastapi import  Request, UploadFile
+from fastapi import  Request, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import uuid
@@ -14,8 +14,14 @@ from sqlalchemy.exc import IntegrityError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.vectorstore import VectorStore
 import numpy as np
+from fastapi.responses import FileResponse
+import time
+import jwt
 
 load_dotenv()
+
+base_dir = os.path.dirname(os.path.dirname(__file__))   # go up from services/ -> app/
+data_dir = os.path.join(base_dir, "data")
 
 # Get user message and save to database for admin monitor
 async def message_service(request: Request, db: Session):
@@ -214,8 +220,8 @@ async def delete_document(request: Request, db: Session):
             VectorStore.save()
 
         # 3.delete physical file in app/data/ folder
-        base_dir = os.path.dirname(os.path.dirname(__file__))   # go up from services/ -> app/
-        data_dir = os.path.join(base_dir, "data")
+        # base_dir = os.path.dirname(os.path.dirname(__file__))   # go up from services/ -> app/
+        # data_dir = os.path.join(base_dir, "data")
         file_path = os.path.join(data_dir, document.name)
 
         if os.path.exists(file_path):
@@ -226,7 +232,7 @@ async def delete_document(request: Request, db: Session):
         db.commit()
 
         return {
-            "EM": f"Document {doc_id} deleted",
+            "EM": f"Document '{document.name}' deleted",
             "EC": 0,
             "DT": []
         }
@@ -237,3 +243,48 @@ async def delete_document(request: Request, db: Session):
             "EM": "Something wrong in admin service...",
             "DT": []
         }
+    
+# View document service
+ALGORITHM = "HS256"
+SECRET_KEY=os.getenv("JWT_SECRET_KEY")
+def create_signed_url(doc_id: int, expires_in: int = 180): # Expires in 30 minutes
+    payload = {"doc_id": doc_id, "exp": int(time.time()) + expires_in}
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return f"/documents/{doc_id}/signed?token={token}"
+
+def serve_signed_document(doc_id: int, token: str, db: Session):
+    # validate signed token
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        doc_id_from_token = payload.get("doc_id")
+        if doc_id_from_token != doc_id:
+            raise HTTPException(status_code=403, detail="Invalid token")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=403, detail="Link expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=403, detail="Invalid token")
+
+    #lookup document metadata
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # build path from metadata
+    file_path = os.path.join(data_dir, doc.name)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # detect MIME type based on extension or DB "type"
+    mime_type = {
+        "PDF": "application/pdf",
+        "DOCX": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "TXT": "text/plain",
+        "MD": "text/markdown",
+    }.get(doc.type.upper(), "application/octet-stream")
+
+
+    return FileResponse(
+        file_path, 
+        media_type=mime_type, 
+        headers={"Content-Disposition": f'inline; filename="{doc.name}"'}
+        )
