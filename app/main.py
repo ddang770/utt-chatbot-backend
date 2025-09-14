@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import app.services.admin_service as admin_service
 import app.services.chat_service as chat_service
 #from app.simpleChainGptOss import process_query
-from fastapi import HTTPException, Request, Response, Depends, UploadFile, File
+from fastapi import HTTPException, Request, Response, Depends, UploadFile, File, Query
 import uuid
 from sqlalchemy.orm import Session
 # from app.models import Message
@@ -52,3 +52,7 @@ def assign_cookie(response: Response, request: Request, db: Session = Depends(ge
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/{doc_id}/signed")
+def view_doc_signed(doc_id: int, token: str = Query(...), db: Session = Depends(get_db)):
+    return admin_service.serve_signed_document(doc_id, token, db)
