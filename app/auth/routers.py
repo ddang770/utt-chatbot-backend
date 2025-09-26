@@ -7,14 +7,14 @@ from app.auth.util import get_current_admin
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=AdminResponse)
-def register(admin: AdminCreate, db: Session = Depends(get_db)):
-    return create_admin(
-        db=db,
-        username=admin.username,
-        email=admin.email,
-        password=admin.password
-    )
+# @router.post("/register", response_model=AdminResponse)
+# def register(admin: AdminCreate, db: Session = Depends(get_db)):
+#     return create_admin(
+#         db=db,
+#         username=admin.username,
+#         email=admin.email,
+#         password=admin.password
+#     )
 
 @router.post("/login", response_model=Token)
 def login(admin: AdminLogin, db: Session = Depends(get_db)):

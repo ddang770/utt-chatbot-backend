@@ -4,8 +4,9 @@ from app.auth.util import get_current_admin
 import app.services.admin_service as admin_service
 from app.config.database import get_db
 from typing import List
-from app.schemas.admin import ChangePasswordSchema
+from app.schemas.admin import ChangePasswordSchema, AdminCreate
 import app.auth.util as auth_util
+from app.auth.admin_service import create_admin
 
 # Create admin dependency
 async def verify_admin(current_admin = Security(get_current_admin)):
@@ -72,6 +73,25 @@ async def change_password(
         password_data.new_password,
         db
     )
+
+@admin_router.post("/register")
+def register(admin: AdminCreate, db: Session = Depends(get_db)):
+    created_admin = create_admin(
+        db=db,
+        username=admin.username,
+        email=admin.email,
+        password=admin.password
+    )
+    return {
+        "EC": 0,
+        "EM": "Create new user success!",
+        "DT": {
+            "username": created_admin.username,
+            "email": created_admin.email,
+            "last_login": created_admin.last_login,
+            "formatted_last_login": created_admin.formatted_last_login
+        }
+    }
 
 
 @admin_router.get("/documents/{doc_id}/generate_link")
