@@ -7,6 +7,7 @@ from typing import List
 from app.schemas.admin import ChangePasswordSchema, AdminCreate
 import app.auth.util as auth_util
 from app.auth.admin_service import create_admin
+from app.config_manager import load_config, save_config
 
 # Create admin dependency
 async def verify_admin(current_admin = Security(get_current_admin)):
@@ -101,4 +102,24 @@ def generate_doc_link(doc_id: int, current_admin = Depends(get_current_admin)):
         "EC": 0,
         "EM": "Create signed url success!",
         "DT": {"url": signed_url}
+    }
+
+@admin_router.get("/chatbotcfg/get")
+def chatbotcfg_get():
+    cfg = load_config()
+    return {
+        "EC": 0,
+        "EM": "Get chatbot cfg success!",
+        "DT": cfg
+    }
+
+@admin_router.post("/chatbotcfg/post")
+async def chatbotcfg_get(request: Request):
+    data = await request.json()
+    config = data.get("config", {})
+    new_data = save_config(config)
+    return {
+        "EC": 0,
+        "EM": "Update chatbot cfg success!",
+        "DT": new_data
     }
