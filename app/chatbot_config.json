@@ -6,11 +6,11 @@
   "temperature": 0.1,
   "maxTokens": 200,
   "topP": 1,
-  "retrieverKSize": 4,
+  "retrieverKSize": 3,
   "enableContextMemory": false,
   "contextMemoryLimit": 3,
   "enableEmojis": false,
   "responseDelay": 500,
-  "enableLogging": true,
+  "enableLogging": false,
   "logLevel": "info"
 }

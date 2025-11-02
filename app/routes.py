@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Security, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Security, Request, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from app.auth.util import get_current_admin
 import app.services.admin_service as admin_service
 from app.config.database import get_db
-from typing import List
+from typing import List, Optional
 from app.schemas.admin import ChangePasswordSchema, AdminCreate
 import app.auth.util as auth_util
 from app.auth.admin_service import create_admin
@@ -30,17 +30,12 @@ def get_document_file(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 @admin_router.get("/stats")
-def get_stats():
+def get_stats(
+    startDate: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    endDate: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
+):
     try:
-        return admin_service.stats_service()
-    except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@admin_router.post("/message")
-async def save_message(request: Request, db: Session = Depends(get_db)):
-    try:
-        return await admin_service.message_service(request, db)
+        return admin_service.stats_service(startDate, endDate)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))

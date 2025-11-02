@@ -4,17 +4,16 @@ from langchain.prompts import PromptTemplate
 from os import getenv
 from dotenv import load_dotenv
 from app.vectorstore import VectorStore
-from app.config_manager import load_config
 import time
 import random
-from langchain.chains import ConversationalRetrievalChain
+from langchain.chains import ConversationalRetrievalChain, RetrievalQA
 from langchain.memory import ConversationBufferWindowMemory
 from app.memory import PostgresChatMessageHistory
 
 load_dotenv()
 
 # Load chatbot config
-config = load_config()
+from app.config_manager import config
 
 # ======== Logging setup ========
 import logging
@@ -52,6 +51,21 @@ def read_vectors_db():
 
 # ======== QA Chain ========
 def create_qa_chain(prompt, memory, llm, db):
+    # if memory is None:
+    #     llm_chain = RetrievalQA.from_chain_type(
+    #     llm = llm,
+    #     chain_type= "stuff",
+    #     retriever=db.as_retriever(
+    #         search_type="similarity",
+    #         search_kwargs={"k": config.get("numDocuments", 4)}
+    #     ),
+    #     return_source_documents = False,
+    #     chain_type_kwargs= {'prompt': prompt}
+
+    #     )
+    #     print("Created QA chain")
+    #     return llm_chain
+    # else:
     candidates = [
         "prompt",
         "qa_prompt",
@@ -86,7 +100,7 @@ def create_qa_chain(prompt, memory, llm, db):
         chain_type="stuff",
         retriever=db.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": config.get("numDocuments", 4)}
+            search_kwargs={"k": config.get("retrieverKSize", 4)}
         ),
         memory=memory,
         return_source_documents=False,
@@ -105,20 +119,6 @@ def create_qa_chain(prompt, memory, llm, db):
     #     return_source_documents=False,
     #     chain_type_kwargs= {'prompt': prompt}
     # )
-
-    # llm_chain = RetrievalQA.from_chain_type(
-    #     llm = llm,
-    #     chain_type= "stuff",
-    #     retriever=db.as_retriever(
-    #         search_type="similarity",
-    #         search_kwargs={"k": config.get("numDocuments", 4)}
-    #     ),
-    #     return_source_documents = False,
-    #     chain_type_kwargs= {'prompt': prompt}
-
-    # )
-    # print("Created QA chain")
-    # return llm_chain
 
 # ======== Prompt nội dung chính ========
 template = f"""
@@ -161,13 +161,14 @@ def get_user_memory(user_id: str):
 # ======== Xử lý truy vấn người dùng ========
 def process_query (user_query: str, user_id: str = "anonymous"):
     try: 
+        # Get lastest config for each query
+        from app.config_manager import config
+
         prompt = creat_prompt(template)
         llm = load_llm()
         db = read_vectors_db()
         # build conversational RAG chain with window memory
-        memory = None
-        if config.get("enableContextMemory", False):
-            memory = get_user_memory(user_id)
+        memory = get_user_memory(user_id)
         llm_chain  = create_qa_chain(prompt, memory, llm, db)
 
         # Delay phản hồi (giả lập typing indicator)

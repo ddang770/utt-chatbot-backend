@@ -23,49 +23,104 @@ load_dotenv()
 base_dir = os.path.dirname(os.path.dirname(__file__))   # go up from services/ -> app/
 data_dir = os.path.join(base_dir, "data")
 
-# Get user message and save to database for admin monitor
-async def message_service(request: Request, db: Session):
-    #Nhận message từ user, lưu DB
-    user_id = request.cookies.get("user_id")
-    data = await request.json()
-    msg = data.get("message", "")
-
-    new_msg = models.Message(user_id=user_id, message=msg)
-    db.add(new_msg)
-    db.commit()
-    db.refresh(new_msg)
-
-    return {"reply": f"Bot received: {msg}"}
-
 # Thống kê cho admin
-def stats_service():
+def stats_service(start_date: str = None, end_date: str = None):
+    """
+    Get statistics for messages, users and documents within a date range.
+    Args:
+        start_date (str, optional): Start date in YYYY-MM-DD format
+        end_date (str, optional): End date in YYYY-MM-DD format
+    Usage examples:
+    # Get all stats
+    stats_service()
+
+    # Get stats for specific date range
+    stats_service("2024-01-01", "2024-01-31")
+
+    # Get stats from start date to now
+    stats_service("2024-01-01")
+
+    # Get stats until end date
+    stats_service(end_date="2024-01-31")
+    """
     db = SessionLocal()
     try:
-        total_users = db.query(models.User).distinct().count()
+        # Build date filter condition
+        date_filter = []
+        if start_date:
+            date_filter.append(func.date(models.Message.created_at) >= start_date)
+        if end_date:
+            date_filter.append(func.date(models.Message.created_at) <= end_date)
 
-        todays_users = (
-            db.query(models.Message.user_id)
-            .filter(func.date(models.Message.created_at) == func.current_date())
-            .distinct()
-            .count()
+        # Daily user counts
+        users_query = (
+            db.query(
+                func.date(models.Message.created_at).label('date'),
+                func.count(func.distinct(models.Message.user_id)).label('count')
+            )
+            .group_by(func.date(models.Message.created_at))
+            .order_by(func.date(models.Message.created_at))
+        )
+        if date_filter:
+            users_query = users_query.filter(*date_filter)
+        users_per_day = users_query.all()
+
+        # Daily message counts
+        messages_query = (
+            db.query(
+                func.date(models.Message.created_at).label('date'),
+                func.count().label('count')
+            )
+            .group_by(func.date(models.Message.created_at))
+            .order_by(func.date(models.Message.created_at))
+        )
+        if date_filter:
+            messages_query = messages_query.filter(*date_filter)
+        messages_per_day = messages_query.all()
+
+        # Total documents count (just a number)
+        documents_query = db.query(models.Document)
+        total_documents = documents_query.count()
+
+        # Recent user messages only
+        recent_messages = (
+            db.query(models.Message)
+            .filter(models.Message.role == "user")  # only user messages
+            .order_by(models.Message.created_at.desc())
+            .limit(2)
+            .all()
         )
 
-        num_messages = db.query(models.Message).count()
-        num_documents = db.query(models.Document).count()
+        stats = {
+            "users": [
+                {"date": str(day.date), "count": day.count}
+                for day in users_per_day
+            ],
+            "messages": [
+                {"date": str(day.date), "count": day.count}
+                for day in messages_per_day
+            ],
+            "documents": total_documents,  # just the number
+            "dataMessagesWithDates": [
+                {
+                    "id": msg.id,
+                    "user": str(msg.user_id),
+                    "message": msg.message,
+                    "timestamp": msg.created_at.isoformat(),
+                }
+                for msg in recent_messages
+            ]
+        }
 
         return {
             "EM": "Get stats data success!",
             "EC": 0,
-            "DT": {
-                "total_users": total_users,
-                "todays_users": todays_users,
-                "num_messages": num_messages,
-                "num_documents": num_documents
-            }
+            "DT": stats
         }
+
     except Exception as e:
-        print(f"Error: {str(e)}")  # In ra lỗi để debug
-        return  {
+        print(f"Error in stats_service: {str(e)}")
+        return {
             "EC": 1,
             "EM": "Something wrong in admin service...",
             "DT": {}
