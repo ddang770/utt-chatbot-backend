@@ -1,15 +1,13 @@
 {
-  "botName": "Document Assistant",
-  "welcomeMessage": "Chào bạn, tôi là UTT AI Chatbot - trợ lý ảo hỗ trợ tư vấn tuyển sinh của Trường Đại học Công nghệ Giao thông vận tải, tôi có thể giúp gì cho bạn về vấn đề tuyển sinh?",
+  "botName": "UTT AI Chatbot",
+  "welcomeMessage": "Chào bạn, tôi là trợ lý ảo hỗ trợ tư vấn tuyển sinh của Trường Đại học Công nghệ Giao thông vận tải, tôi có thể giúp gì cho bạn về vấn đề tuyển sinh?",
   "fallbackMessage": "Xin lỗi, tôi không tìm thấy thông tin phù hợp trong tài liệu.",
   "model": "openai/gpt-oss-20b:free",
   "temperature": 0.1,
   "maxTokens": 200,
   "topP": 1,
   "retrieverKSize": 3,
-  "enableContextMemory": false,
-  "contextMemoryLimit": 3,
-  "enableEmojis": false,
+  "enableEmojis": true,
   "responseDelay": 500,
   "enableLogging": false,
   "logLevel": "info"

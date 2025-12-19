@@ -1,13 +1,11 @@
 from langchain_openai import ChatOpenAI
-#from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from os import getenv
 from dotenv import load_dotenv
 from app.vectorstore import VectorStore
 import time
 import random
-from langchain.chains import ConversationalRetrievalChain, RetrievalQA
-from langchain.memory import ConversationBufferWindowMemory
+from langchain.chains import RetrievalQA
 from app.memory import PostgresChatMessageHistory
 
 load_dotenv()
@@ -50,75 +48,20 @@ def read_vectors_db():
     return db
 
 # ======== QA Chain ========
-def create_qa_chain(prompt, memory, llm, db):
-    # if memory is None:
-    #     llm_chain = RetrievalQA.from_chain_type(
-    #     llm = llm,
-    #     chain_type= "stuff",
-    #     retriever=db.as_retriever(
-    #         search_type="similarity",
-    #         search_kwargs={"k": config.get("numDocuments", 4)}
-    #     ),
-    #     return_source_documents = False,
-    #     chain_type_kwargs= {'prompt': prompt}
+def create_qa_chain(prompt, llm, db):
+    llm_chain = RetrievalQA.from_chain_type(
+    llm = llm,
+    chain_type= "stuff",
+    retriever=db.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": config.get("retrieverKSize", 4)}
+    ),
+    return_source_documents = False,
+    chain_type_kwargs= {'prompt': prompt}
 
-    #     )
-    #     print("Created QA chain")
-    #     return llm_chain
-    # else:
-    candidates = [
-        "prompt",
-        "qa_prompt",
-        "qa_template",
-        "question_generator_prompt",
-        "question_generator_template",
-    ]
-
-    for key in candidates:
-        try:
-            ct_kwargs = {key: prompt}
-            chain = ConversationalRetrievalChain.from_llm(
-                llm=llm,
-                chain_type="stuff",
-                retriever=db.as_retriever(
-                    search_type="similarity",
-                    search_kwargs={"k": config.get("retrieverKSize", 4)}
-                ),
-                memory=memory,
-                return_source_documents=False,
-                chain_type_kwargs=ct_kwargs
-            )
-            logger.info(f"Created QA chain using chain_type_kwargs key: {key}")
-            return chain
-        except Exception as _:
-            # try next key
-            continue
-
-    # final fallback: don't pass chain_type_kwargs (let langchain defaults)
-    chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        chain_type="stuff",
-        retriever=db.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": config.get("retrieverKSize", 4)}
-        ),
-        memory=memory,
-        return_source_documents=False,
     )
-    logger.info("Created QA chain (fallback without chain_type_kwargs)")
-    return chain
-
-    # llm_chain = ConversationalRetrievalChain.from_llm(
-    #     llm=llm,
-    #     chain_type= "stuff",
-    #     retriever=db.as_retriever(
-    #         search_type="similarity",
-    #         search_kwargs={"k": config.get("numDocuments", 4)}
-    #     ),
-    #     memory=memory,
-    #     return_source_documents=False,
-    #     chain_type_kwargs= {'prompt': prompt}
-    # )
+    print("Created QA chain")
+    return llm_chain
 
 # ======== Prompt nội dung chính ========
 template = f"""
@@ -131,33 +74,6 @@ Nếu không tìm thấy thông tin phù hợp, hãy trả lời: "{config['fall
 CÂU HỎI: {{question}}
 """
 
-def get_user_memory(user_id: str):
-    """Create ConversationBufferWindowMemory and preload last N messages from Postgres."""
-    # load messages from DB and populate memory (if any)
-    history = PostgresChatMessageHistory(user_id)
-    # window size from config
-    limit = int(config.get("contextMemoryLimit", 3) or 3)
-    # create window memory
-    mem = ConversationBufferWindowMemory(
-        memory_key="chat_history",
-        k=limit,
-        return_messages=True,
-        #chat_memory=history  # if your PostgresChatMessageHistory matches the required interface
-    )
-
-    try:
-        msgs = history.get_messages(limit=limit)
-        for m in msgs:
-            if m["role"] == "user":
-                # add_user_message exists on underlying chat memory
-                mem.chat_memory.add_user_message(m["content"])
-            else:
-                mem.chat_memory.add_ai_message(m["content"])
-    finally:
-        history.close()
-
-    return mem
-
 # ======== Xử lý truy vấn người dùng ========
 def process_query (user_query: str, user_id: str = "anonymous"):
     try: 
@@ -168,8 +84,7 @@ def process_query (user_query: str, user_id: str = "anonymous"):
         llm = load_llm()
         db = read_vectors_db()
         # build conversational RAG chain with window memory
-        memory = get_user_memory(user_id)
-        llm_chain  = create_qa_chain(prompt, memory, llm, db)
+        llm_chain  = create_qa_chain(prompt, llm, db)
 
         # Delay phản hồi (giả lập typing indicator)
         delay = config.get("responseDelay", 0)
@@ -178,11 +93,11 @@ def process_query (user_query: str, user_id: str = "anonymous"):
 
 
         # Truy vấn LLM
-        #response = llm_chain.invoke({"query": user_query})
-        response = llm_chain.invoke({"question": user_query})
+        response = llm_chain.invoke({"query": user_query})
+        #response = llm_chain.invoke({"question": user_query})
         print(response)
         # response sẽ trả về 1 dict gồm 2 key là: query và result
-        if 'answer' not in response:
+        if 'result' not in response:
             return {
                 "EM": "Something wrong with query proccess ...",
                 "EC": 1,
@@ -191,7 +106,7 @@ def process_query (user_query: str, user_id: str = "anonymous"):
 
         # Cleanings
         # xử lý strip vì openrouter trả về cả reasoning trong result (lỏ vcl)
-        result = response["answer"].strip()
+        result = response["result"].strip()
         # loại bỏ nếu có prefix "analysis" hay "assistantfinal"
         if "assistantfinal" in result:
             result = result.split("assistantfinal")[-1].strip()
