@@ -11,9 +11,32 @@ class UserQuery(BaseModel):
     id: str
     query: str
 
-def chat(user_query: UserQuery):
+# def chat(user_query: UserQuery):
+#     try:
+#         result = process_query(user_query.query, user_query.id)
+#         return {
+#             "EM": "Success",
+#             "EC": 0,
+#             "DT": result
+#         }
+#     except Exception as e:
+#         print(f"Error: {str(e)}")  # In ra lỗi để debug
+#         return  {
+#             "EC": 1,
+#             "EM": "Something wrong in chat service...",
+#             "DT": ""
+#         }
+
+async def chat(request: Request):
     try:
-        result = process_query(user_query.query)
+        user_id = request.cookies.get("user_id")
+        data = await request.json()
+        user_query = data.get("user_query", {})
+        # Lấy text hoặc query của người dùng
+        user_text = user_query.get("text", "")
+        print(f"User ID: {user_id}")
+        print(f"User text: {user_text}")
+        result = process_query(user_text, user_id)
         return {
             "EM": "Success",
             "EC": 0,

@@ -3,13 +3,11 @@ from pydantic import BaseModel
 import app.services.admin_service as admin_service
 import app.services.chat_service as chat_service
 #from app.simpleChainGptOss import process_query
-from fastapi import HTTPException, Request, Response, Depends, UploadFile, File, Query
-import uuid
+from fastapi import HTTPException, Request, Response, Depends, Query
 from sqlalchemy.orm import Session
 # from app.models import Message
 from app.config.database import get_db
 from app.vectorstore import VectorStore
-from typing import List
 from app.auth import routers
 import app.routes as admin_router
 
@@ -35,9 +33,9 @@ class UserQuery(BaseModel):
     query: str
 
 @app.post("/chat")
-def chat(user_query: UserQuery):
+async def chat(request: Request):
     try:
-        return chat_service.chat(user_query)
+        return await chat_service.chat(request)
     except Exception as e:
         print(f"Error: {str(e)}")  # In ra lỗi để debug
         raise HTTPException(status_code=500, detail=str(e))

@@ -8,7 +8,10 @@ Technologies used:
 
 ![Image](https://d2908q01vomqb2.cloudfront.net/887309d048beef83ad3eabf2a79a64a389ab1c9f/2023/07/13/DBBLOG-3334-image001.png)
 
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+- Active python virtual env: 
+```source .venv/bin/activate```
+- Run app:
+```uvicorn app.main:app --reload --host 0.0.0.0 --port 8000```
 
 alembic upgrade head
 
