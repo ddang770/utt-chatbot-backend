@@ -1,5 +1,5 @@
 # Chatbot for documents
-
+Check the Frontend here: https://github.com/ddang770/chatbot-for-docs-frontend
 Technologies used:
 - LangChain
 - RAG
