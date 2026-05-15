@@ -2,7 +2,6 @@ from app.config.cors import app
 from pydantic import BaseModel
 import app.services.admin_service as admin_service
 import app.services.chat_service as chat_service
-#from app.simpleChainGptOss import process_query
 from fastapi import HTTPException, Request, Response, Depends, Query
 from sqlalchemy.orm import Session
 # from app.models import Message
@@ -15,7 +14,7 @@ import app.routes as admin_router
 #@app.on_event("startup")
 def load_faiss_index():
     VectorStore.get_instance()
-    print("✅ FAISS index loaded and ready")
+    print("FAISS index loaded and ready")
 
 # Route test
 @app.get("/")

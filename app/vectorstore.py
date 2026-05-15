@@ -21,15 +21,15 @@ class VectorStore:
             )
 
             if os.path.exists(os.path.join(cls._db_path, "index.faiss")):
-                print("🔄 Loading FAISS index...")
+                print("Loading FAISS index...")
                 cls._instance = FAISS.load_local(
                     cls._db_path,
                     embeddings,
                     allow_dangerous_deserialization=True
                 )
-                print("✅ FAISS index loaded successfully")
+                print("FAISS index loaded successfully")
             else:
-                print("⚡ No FAISS index found, creating a new empty one...")
+                print("No FAISS index found, creating a new empty one...")
                 dimension = 1536  # text-embedding-3-small output size
                 index = faiss.IndexFlatL2(dimension)
                 docstore = InMemoryDocstore({})
@@ -41,7 +41,7 @@ class VectorStore:
                     docstore=docstore,
                     index_to_docstore_id=index_to_docstore_id
                 )
-                print("✅ Empty FAISS index created")
+                print("Empty FAISS index created")
 
         return cls._instance
 
@@ -49,7 +49,7 @@ class VectorStore:
     def save(cls):
         if cls._instance:
             cls._instance.save_local(cls._db_path)
-            print("💾 FAISS index saved")
+            print("FAISS index saved")
 
     @classmethod
     def add_texts(cls, texts: List[str], metadatas: List[dict] = None):
@@ -69,6 +69,6 @@ class VectorStore:
         if keys_to_delete:
             faiss_index.delete(keys_to_delete)
             cls.save()
-            print(f"🗑️ Deleted {len(keys_to_delete)} docs from FAISS")
+            print(f"Deleted {len(keys_to_delete)} docs from FAISS")
         else:
-            print("⚠️ No matching doc_ids found in FAISS")
+            print("No matching doc_ids found in FAISS")

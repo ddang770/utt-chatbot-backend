@@ -26,8 +26,7 @@ logger = logging.getLogger(__name__)
 # Load LLM theo config
 def load_llm():
     llm = ChatOpenAI(
-        api_key=getenv("OPENROUTER_API_KEY"),
-        base_url=getenv("OPENROUTER_BASE_URL"),
+        api_key=getenv("OPENAI_LLM_KEY"),
         model=config["model"],
         temperature=config["temperature"]
     )
